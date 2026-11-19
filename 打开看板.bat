@@ -1,21 +1,31 @@
 @echo off
-rem QA 学习看板启动器：以无边框窗口打开，按 Win+左键 贴到屏幕左侧
-set DASH=file:///D:/qa-learning/dashboard.html
-set EDGE=C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
-set EDGE2=C:\Program Files\Microsoft\Edge\Application\msedge.exe
-set CHROME=C:\Program Files\Google\Chrome\Application\chrome.exe
+setlocal EnableExtensions
+rem QA 学习看板启动器（避免使用 if(...) 括号块：路径里的 (x86) 会导致解析错误）
+set "DASH=file:///D:/qa-learning/dashboard.html"
+set "EDGEX86=C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+set "EDGE64=C:\Program Files\Microsoft\Edge\Application\msedge.exe"
+set "CHROME=C:\Program Files\Google\Chrome\Application\chrome.exe"
 
-if exist "%EDGE%" (
-  start "" "%EDGE%" --app="%DASH%" --window-size=500,1050
-  goto :eof
-)
-if exist "%EDGE2%" (
-  start "" "%EDGE2%" --app="%DASH%" --window-size=500,1050
-  goto :eof
-)
-if exist "%CHROME%" (
-  start "" "%CHROME%" --app="%DASH%" --window-size=500,1050
-  goto :eof
-)
-echo 没找到 Edge 或 Chrome，直接用浏览器打开：
+if exist "%EDGEX86%" goto useEdgeX86
+if exist "%EDGE64%" goto useEdge64
+if exist "%CHROME%" goto useChrome
+goto useDefault
+
+:useEdgeX86
+start "" "%EDGEX86%" --app="%DASH%" --window-size=520,1050
+goto done
+
+:useEdge64
+start "" "%EDGE64%" --app="%DASH%" --window-size=520,1050
+goto done
+
+:useChrome
+start "" "%CHROME%" --app="%DASH%" --window-size=520,1050
+goto done
+
+:useDefault
 start "" "%DASH%"
+goto done
+
+:done
+exit /b 0

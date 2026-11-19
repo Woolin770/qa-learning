@@ -179,9 +179,15 @@ function render(){
     document.getElementById("today").innerHTML=
       `${dow}｜<b>${dayPlan?dayPlan[1]:"自由安排"}</b>　${now.gate?`<span class="badge b-gate">${now.gate}</span>`:""}`;
   }else{
+    const first=new Date(WEEKS[0].s+"T00:00:00");
+    const t0=new Date(); t0.setHours(0,0,0,0);
+    const diff=Math.round((first-t0)/86400000);
     document.getElementById("title").textContent="QA 学习看板";
-    document.getElementById("sub").textContent="不在计划周期内（11-20 至 2027-02-21）";
-    document.getElementById("today").innerHTML="点「跳到今天」或手动展开对应周。";
+    document.getElementById("sub").textContent="计划周期 2026-11-20 ~ 2027-02-21";
+    document.getElementById("today").innerHTML = diff>0
+      ? `距开始还有 <b>${diff}</b> 天　明天先看 W0 的 D1（修用例）`
+      : `计划已结束，点「跳到今天」回顾。`;
+    if(diff>0 && firstRender){ openSet.add(0); firstRender=false; }
   }
 
   WEEKS.forEach((w,wi)=>{
