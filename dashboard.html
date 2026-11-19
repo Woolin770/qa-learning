@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>QA 学习看板</title>
+<style>
+  :root{
+    --bg:#0f1419; --card:#171e26; --card2:#1c242e; --line:#2a3542;
+    --text:#e6edf3; --dim:#8b98a5; --accent:#4a9eff; --ok:#3fb950; --warn:#d29922; --gate:#f85149;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font:13px/1.55 "微软雅黑",system-ui,sans-serif;padding:10px;min-width:360px}
+  h1{font-size:15px;font-weight:600;display:flex;align-items:center;gap:6px}
+  .sub{color:var(--dim);font-size:11px;margin-top:2px}
+  .hero{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:10px}
+  .badge{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600}
+  .b-week{background:#1f3b63;color:#9ecbff}
+  .b-gate{background:#4a1d1d;color:#ff9b9b}
+  .b-today{background:#1d3a24;color:#7ee787}
+  .bar{height:6px;background:#0b0f14;border-radius:3px;overflow:hidden;margin-top:8px}
+  .bar > i{display:block;height:100%;background:linear-gradient(90deg,#2f81f7,#3fb950);width:0}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .today{margin-top:8px;padding:8px;background:#12202b;border-left:3px solid var(--ok);border-radius:4px}
+  .today b{color:#7ee787}
+  .week{background:var(--card);border:1px solid var(--line);border-radius:8px;margin-bottom:8px;overflow:hidden}
+  .week.now{border-color:var(--accent);box-shadow:0 0 0 1px #1f4e79 inset}
+  .wh{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;cursor:pointer;background:var(--card2)}
+  .wh:hover{background:#22303d}
+  .wt{font-weight:600;font-size:12.5px}
+  .wd{color:var(--dim);font-size:11px}
+  .wb{padding:8px 10px;display:none}
+  .week.open .wb{display:block}
+  .days{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
+  .day{font-size:10px;padding:2px 6px;border:1px solid var(--line);border-radius:4px;color:var(--dim)}
+  .day.hl{border-color:var(--ok);color:#7ee787}
+  label.task{display:flex;gap:8px;align-items:flex-start;padding:5px 4px;border-radius:4px;cursor:pointer;font-size:12px}
+  label.task:hover{background:#1b242e}
+  label.task input{margin-top:2px;accent-color:#3fb950;flex:0 0 auto}
+  label.task.done span{color:var(--dim);text-decoration:line-through}
+  .foot{color:var(--dim);font-size:10.5px;margin-top:10px;padding:8px;border-top:1px solid var(--line);line-height:1.7}
+  .foot code{background:#0b0f14;padding:1px 4px;border-radius:3px;color:#9ecbff}
+  .btns{display:flex;gap:6px;margin-bottom:8px}
+  button{background:#22303d;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:4px 9px;font-size:11px;cursor:pointer}
+  button:hover{background:#2b3a49}
+  .stat{font-size:11px;color:var(--dim)}
+  .stat b{color:var(--text)}
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="row">
+    <div>
+      <h1 id="title">QA 学习看板</h1>
+      <div class="sub" id="sub">加载中…</div>
+    </div>
+    <div style="text-align:right">
+      <div class="stat">完成 <b id="done">0</b>/<b id="total">0</b></div>
+      <div class="stat" id="pct" style="color:#3fb950"></div>
+    </div>
+  </div>
+  <div class="bar"><i id="prog"></i></div>
+  <div class="today" id="today"></div>
+</div>
+
+<div class="btns">
+  <button id="btnToday">跳到今天</button>
+  <button id="btnAll">全部展开</button>
+  <button id="btnReset">重置勾选</button>
+</div>
+
+<div id="weeks"></div>
+
+<div class="foot">
+  数据来自 <code>D:\qa-learning\PLAN.md</code> 与 <code>PROGRESS.md</code>；勾选存在本机浏览器（localStorage），换浏览器不同步。<br>
+  <b>固定到左侧</b>：双击 <code>dashboard.bat</code> 打开无边框窗口 → 按 <code>Win + ←</code> 贴左半屏，另一边放 DSH。<br>
+  新会话里直接说「读 PLAN.md 和 PROGRESS.md，给我今天的任务」，不需要翻聊天记录。
+</div>
+
+<script>
+const WEEKS = [
+ {id:"W0", s:"2026-11-20", e:"2026-11-22", theme:"启动：修用例 + 补方法", gate:"",
+  days:[["周五","修用例+装Python3.11"],["周六","判定表/场景法+购物车20条"],["周日","休息"]],
+  tasks:["登录用例修到 19 条（3 个硬伤 + 补 2 条）","notes/04 判定表与场景法","购物车用例 20 条","notes/00 环境记录"]},
+
+ {id:"W1", s:"2026-11-23", e:"2026-11-29", theme:"用例补齐到 80 + 缺陷管理", gate:"",
+  days:[["周一","判定表练习"],["周二","订单 20 条"],["周三","支付 20 条"],["周四","缺陷生命周期"],["周五","执行 10 条"],["周六","复盘+投5家"]],
+  tasks:["用例总数到 80 条","缺陷管理笔记","投递 5 家"]},
+
+ {id:"W2", s:"2026-11-30", e:"2026-12-06", theme:"执行测试 + 项目 A 收尾", gate:"G1",
+  days:[["周一","执行 20 条"],["周二","提 10 条缺陷"],["周三","提 10 条缺陷"],["周四","写测试报告"],["周五","修订用例"],["周六","G1 自检"]],
+  tasks:["20 条真实缺陷","测试报告（含数据）","G1 全部交付物"]},
+
+ {id:"W3", s:"2026-12-07", e:"2026-12-13", theme:"HTTP + Postman", gate:"G2",
+  days:[["周一","HTTP 基础"],["周二","抓包 5 个请求"],["周三","Postman 基础"],["周四","鉴权与关联"],["周五","30 个测试点"],["周六","接口报告"]],
+  tasks:["30 个接口测试点","Postman 集合","接口测试报告"]},
+
+ {id:"W4", s:"2026-12-14", e:"2026-12-20", theme:"SQL + Linux", gate:"",
+  days:[["周一","SQL 单表"],["周二","多表 JOIN"],["周三","窗口函数"],["周四","Linux 文件"],["周五","日志定位"],["周六","30 题复盘"]],
+  tasks:["SQL 30 题","命令表 60 条","日志定位练习"]},
+
+ {id:"W5", s:"2026-12-21", e:"2026-12-27", theme:"requests + pytest", gate:"",
+  days:[["周一","requests 基础"],["周二","Session 鉴权"],["周三","断言设计"],["周四","参数化"],["周五","依赖与清理"],["周六","25 条用例"]],
+  tasks:["25 条接口用例","pytest fixture 笔记"]},
+
+ {id:"W6", s:"2026-12-28", e:"2027-01-03", theme:"框架分层 + Allure", gate:"G3",
+  days:[["周一","目录分层"],["周二","请求封装"],["周三","配置与密钥"],["周四","日志"],["周五","Allure"],["周六","框架验收"]],
+  tasks:["一条命令跑通 25 条","Allure 报告","README"]},
+
+ {id:"W7", s:"2027-01-04", e:"2027-01-10", theme:"Selenium + POM（试投开始）", gate:"",
+  days:[["周一","定位"],["周二","等待"],["周三","特殊元素"],["周四","断言截图"],["周五","POM"],["周六","10 条+试投"]],
+  tasks:["10 条稳定 UI 用例","投递 5-8 家"]},
+
+ {id:"W8", s:"2027-01-11", e:"2027-01-17", theme:"Playwright + JMeter", gate:"G4",
+  days:[["周一","Playwright"],["周二","对比选型"],["周三","JMeter"],["周四","性能指标"],["周五","压测"],["周六","报告"]],
+  tasks:["1 页选型说明","压测报告"]},
+
+ {id:"W9", s:"2027-01-18", e:"2027-01-24", theme:"Git + CI + Docker", gate:"",
+  days:[["周一","分支"],["周二","冲突"],["周三","Jenkins"],["周四","定时与通知"],["周五","Docker"],["周六","验收"]],
+  tasks:["CI 自动跑 25 条","能读 Dockerfile"]},
+
+ {id:"W10", s:"2027-01-25", e:"2027-01-31", theme:"综合项目 v1", gate:"",
+  days:[["周一","项目范围"],["周二","80 用例"],["周三","30 接口点"],["周四","25 自动化"],["周五","SQL 校验"],["周六","报告"]],
+  tasks:["项目 v1 可演示","测试分析文档"]},
+
+ {id:"W11", s:"2027-02-01", e:"2027-02-07", theme:"综合项目 v2（春节减半）", gate:"",
+  days:[["周一","Web 10 条"],["周二","框架完善"],["周三","CI"],["周四","README"],["周五","演示"],["周六","春节"]],
+  tasks:["Web 10 条","README 陌生人可跑","8 分钟讲解稿"]},
+
+ {id:"W12", s:"2027-02-08", e:"2027-02-14", theme:"简历 + 集中投递", gate:"G5",
+  days:[["周一","简历 v3"],["周二","作品集"],["周三","讲述稿"],["周四","投 20"],["周五","投 20"],["周六","复盘"]],
+  tasks:["简历 v3","累计 80 投递"]},
+
+ {id:"W13", s:"2027-02-15", e:"2027-02-21", theme:"面试 + 二轮投递", gate:"G6",
+  days:[["周一","基础题"],["周二","接口+SQL"],["周三","模拟面试"],["周四","面试"],["周五","复盘"],["周六","二轮投"]],
+  tasks:["5 场面试","60s/3min 录音"]}
+];
+
+const KEY="qa-progress-v1";
+let state=JSON.parse(localStorage.getItem(KEY)||"{}");
+let openSet=new Set();
+let firstRender=true;
+const DAY=["周日","周一","周二","周三","周四","周五","周六"];
+
+function todayIdx(){
+  const now=new Date(); now.setHours(0,0,0,0);
+  return WEEKS.findIndex(w=>{
+    const s=new Date(w.s+"T00:00:00"), e=new Date(w.e+"T00:00:00");
+    return now>=s && now<=e;
+  });
+}
+function taskId(w,i){return w.id+"-"+i;}
+function save(){
+  localStorage.setItem(KEY,JSON.stringify(state));
+  const y=window.scrollY; render(); window.scrollTo(0,y);
+}
+
+function render(){
+  const box=document.getElementById("weeks"); box.innerHTML="";
+  let total=0, done=0;
+  WEEKS.forEach(w=>{
+    total+=w.tasks.length;
+    w.tasks.forEach((t,i)=>{ if(state[taskId(w,i)]) done++; });
+  });
+  document.getElementById("total").textContent=total;
+  document.getElementById("done").textContent=done;
+  const p=total?Math.round(done/total*100):0;
+  document.getElementById("prog").style.width=p+"%";
+  document.getElementById("pct").textContent=p+"%";
+
+  const ti=todayIdx();
+  if(firstRender){ if(ti>=0) openSet.add(ti); firstRender=false; }
+  const now=WEEKS[ti];
+
+  if(now){
+    const d=new Date(); const dow=DAY[d.getDay()];
+    const dayPlan=now.days.find(x=>x[0]===dow);
+    document.getElementById("title").textContent=`${now.id} · ${now.theme}`;
+    document.getElementById("sub").textContent=`${now.s} ~ ${now.e}`;
+    document.getElementById("today").innerHTML=
+      `${dow}｜<b>${dayPlan?dayPlan[1]:"自由安排"}</b>　${now.gate?`<span class="badge b-gate">${now.gate}</span>`:""}`;
+  }else{
+    document.getElementById("title").textContent="QA 学习看板";
+    document.getElementById("sub").textContent="不在计划周期内（11-20 至 2027-02-21）";
+    document.getElementById("today").innerHTML="点「跳到今天」或手动展开对应周。";
+  }
+
+  WEEKS.forEach((w,wi)=>{
+    const el=document.createElement("div");
+    el.className="week"+(wi===ti?" now":"")+(openSet.has(wi)?" open":"");
+    const gate=w.gate?`<span class="badge b-gate">${w.gate}</span>`:"";
+    el.innerHTML=`
+      <div class="wh">
+        <div>
+          <div class="wt">${w.id}　${w.theme} ${gate}</div>
+          <div class="wd">${w.s} ~ ${w.e}</div>
+        </div>
+        <div class="wd" id="cnt-${w.id}"></div>
+      </div>
+      <div class="wb">
+        <div class="days">${w.days.map(([d,f])=>{
+          const isToday = wi===ti && new Date().getDay()===DAY.indexOf(d);
+          return `<span class="day${isToday?" hl":""}">${d} ${f}</span>`;
+        }).join("")}</div>
+        ${w.tasks.map((t,i)=>`
+          <label class="task${state[taskId(w,i)]?" done":""}">
+            <input type="checkbox" data-k="${taskId(w,i)}" ${state[taskId(w,i)]?"checked":""}>
+            <span>${t}</span>
+          </label>`).join("")}
+      </div>`;
+    el.querySelector(".wh").addEventListener("click",()=>{
+      if(openSet.has(wi)) openSet.delete(wi); else openSet.add(wi);
+      el.classList.toggle("open");
+    });
+    el.querySelectorAll("input[type=checkbox]").forEach(cb=>{
+      cb.addEventListener("change",e=>{
+        state[e.target.dataset.k]=e.target.checked;
+        save();
+      });
+    });
+    box.appendChild(el);
+    const c=w.tasks.filter((_,i)=>state[taskId(w,i)]).length;
+    el.querySelector("#cnt-"+w.id).textContent=`${c}/${w.tasks.length}`;
+  });
+}
+
+document.getElementById("btnToday").addEventListener("click",()=>{
+  const i=todayIdx();
+  if(i<0){document.getElementById("weeks").scrollIntoView({behavior:"smooth"});return;}
+  const el=document.querySelectorAll(".week")[i];
+  el.scrollIntoView({behavior:"smooth",block:"center"});
+  el.classList.add("open");
+});
+document.getElementById("btnAll").addEventListener("click",()=>{
+  const all=document.querySelectorAll(".week");
+  const anyClosed=[...all].some(e=>!e.classList.contains("open"));
+  all.forEach(e=>e.classList.toggle("open",anyClosed));
+});
+document.getElementById("btnReset").addEventListener("click",()=>{
+  if(confirm("清空所有勾选？")){state={};save();}
+});
+
+render();
+</script>
+</body>
+</html>
